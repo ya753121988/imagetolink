@@ -71,9 +71,7 @@ def is_subscribed(bot, user_id):
             if status not in ['member', 'administrator', 'creator']:
                 return False
         except:
-            # If bot is not admin in the channel, it might fail. 
-            # Admin must add every bot as admin in the force channels.
-            continue 
+            continue # If bot is not admin in one channel, skip or handle as needed
     return True
 
 # --- PREMIUM UI CSS (EXTENSIVE STYLING & RESPONSIVENESS) ---
@@ -127,6 +125,10 @@ PREMIUM_STYLE = """
         .poster-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
         .poster-item img { height: 140px; }
     }
+
+    /* Copy Button Tooltip style */
+    .copy-btn { cursor: pointer; transition: 0.2s; }
+    .copy-btn:active { transform: scale(0.9); }
 </style>
 """
 
@@ -181,16 +183,16 @@ def home():
                         </form>
                     </div>
                 </div>
-                
+
                 <div class="col-lg-5">
                     <div class="glass-card">
-                        <h4 class="fw-bold mb-3"><i class="fab fa-telegram text-info me-2"></i>Deploy Your Bot</h4>
-                        <p class="small text-muted">আপনার টেলিগ্রাম বট টোকেনটি এখানে দিয়ে কানেক্ট করুন। আপনার বটটিও তখন এই এপিআই ব্যবহার করতে পারবে।</p>
-                        <form action="/user_add_bot" method="POST">
+                        <h4 class="fw-bold mb-3"><i class="fab fa-telegram text-info me-2"></i>বট মেকার (Deploy Bot)</h4>
+                        <p class="small text-muted">আপনার নিজস্ব টেলিগ্রাম বট টোকেনটি এখানে দিয়ে কানেক্ট করুন। আপনার বটটিও তখন এই এপিআই ব্যবহার করতে পারবে।</p>
+                        <form action="/user_deploy_bot" method="POST">
                             <div class="mb-3">
-                                <input type="text" name="token" class="form-control" placeholder="Enter Bot Token" required>
+                                <input type="text" name="token" class="form-control" placeholder="আপনার বট টোকেন দিন" required>
                             </div>
-                            <button type="submit" class="btn-main w-100">Connect Bot Now</button>
+                            <button type="submit" class="btn-main w-100">কানেক্ট করুন</button>
                         </form>
                     </div>
                 </div>
@@ -254,6 +256,20 @@ def view_poster(id):
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
         {{ style | safe }}{{ s.ad_popunder | safe }}{{ s.ad_social | safe }}
+        <script>
+            function copyLink(text, btnId) {
+                navigator.clipboard.writeText(text).then(() => {
+                    const btn = document.getElementById(btnId);
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '<i class="fas fa-check"></i>';
+                    btn.classList.replace('btn-outline-primary', 'btn-success');
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        btn.classList.replace('btn-success', 'btn-outline-primary');
+                    }, 2000);
+                });
+            }
+        </script>
     </head>
     <body class="py-4">
         <div class="container">
@@ -265,7 +281,12 @@ def view_poster(id):
                 <h5 class="mb-4 text-start"><i class="fas fa-link me-2"></i>Select format to download:</h5>
                 <div class="row g-2">
                     {% for fmt, link in p.links.items() %}
-                    <div class="col-md-3 col-6"><a href="{{ link }}" target="_blank" class="btn btn-outline-primary w-100 btn-sm fw-bold">{{ fmt.upper() }}</a></div>
+                    <div class="col-md-3 col-6">
+                        <div class="input-group input-group-sm">
+                            <a href="{{ link }}" target="_blank" class="btn btn-outline-primary flex-grow-1 fw-bold">{{ fmt.upper() }}</a>
+                            <button class="btn btn-outline-primary" id="btn-{{ fmt }}" onclick="copyLink('{{ link }}', 'btn-{{ fmt }}')"><i class="fas fa-copy"></i></button>
+                        </div>
+                    </div>
                     {% endfor %}
                 </div>
                 <div class="mt-4"><a href="/" class="btn-main">Upload Another</a></div>
@@ -277,18 +298,16 @@ def view_poster(id):
     """, style=PREMIUM_STYLE, s=s, p=p)
 
 # --- USER BOT ACTION ---
-@app.route('/user_add_bot', methods=['POST'])
-def user_add_bot():
+@app.route('/user_deploy_bot', methods=['POST'])
+def user_deploy_bot():
     token = request.form.get('token')
     if token:
-        # Check if bot already exists
         if not bots_col.find_one({"token": token}):
             bots_col.insert_one({"token": token, "type": "user_added", "date": datetime.now()})
-            # Connect Webhook
             requests.get(f"https://api.telegram.org/bot{token}/setWebhook?url={request.host_url}webhook/{token}")
-    return render_template_string("<script>alert('Your bot has been connected successfully!'); window.location.href='/';</script>")
+    return render_template_string("<script>alert('আপনার বটটি সফলভাবে কানেক্ট হয়েছে!'); window.location.href='/';</script>")
 
-# --- ADMIN SECTION ---
+# --- ADMIN SECTION (ULTRA DETAILED) ---
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -359,7 +378,7 @@ def admin_dash():
                 <div class="row mt-4 g-4">
                     <div class="col-md-6">
                         <div class="glass-card">
-                            <h5>Add Telegram Bot (Admin)</h5>
+                            <h5>Add Telegram Bot</h5>
                             <form action="/admin/add_bot" method="POST" class="input-group mb-3">
                                 <input type="text" name="token" class="form-control" placeholder="Bot Token">
                                 <button class="btn btn-primary">Connect</button>
@@ -503,33 +522,35 @@ def webhook(token):
             msg = update.message
             user = msg.from_user
             
-            # --- GLOBAL FORCE JOIN CHECK (Connected to Admin Panel) ---
+            # --- GLOBAL FORCE JOIN CHECK (Admin Connected) ---
             if not is_subscribed(bot, user.id):
                 kb = types.InlineKeyboardMarkup()
                 chans = list(channels_col.find())
                 for c in chans:
                     try:
                         c_info = bot.get_chat(c['channel_id'])
-                        c_link = c_info.invite_link or f"https://t.me/{c_info.username}"
-                        kb.add(types.InlineKeyboardButton(f"Join {c_info.title}", url=c_link))
+                        kb.add(types.InlineKeyboardButton(f"Join {c_info.title}", url=c_info.invite_link or f"https://t.me/{c_info.username}"))
                     except:
-                        # Fallback if bot is not admin or link is private
                         kb.add(types.InlineKeyboardButton("Join Channel", url=f"https://t.me/{c['channel_id'].replace('-100','')}"))
                 
-                kb.add(types.InlineKeyboardButton("Check Join 🔄", callback_data="check_sub"))
+                kb.add(types.InlineKeyboardButton("Check Join ✅", callback_data="recheck_join"))
                 bot.send_message(msg.chat.id, "❌ আপনি আমাদের চ্যানেলে জয়েন নেই! নিচে দেওয়া চ্যানেলে জয়েন করে আবার ট্রাই করুন।", reply_markup=kb)
                 return "OK", 200
 
-            # --- START COMMAND (REFIXED & IMPROVED) ---
+            # --- START COMMAND (IMPROVED INFO DISPLAY) ---
             if msg.text == "/start":
+                wait_msg = bot.send_message(msg.chat.id, "⌛ আপনার প্রোফাইল তথ্য লোড হচ্ছে...")
+                
+                # Info Text
                 p_text = f"👋 **স্বাগতম {user.first_name}!**\n\n"
-                p_text += f"👤 **Name:** `{user.first_name} {user.last_name or ''}`\n"
-                p_text += f"🆔 **ID:** `{user.id}`\n"
-                p_text += f"🔗 **Username:** @{user.username or 'None'}\n\n"
+                p_text += f"👤 **নাম:** `{user.first_name} {user.last_name or ''}`\n"
+                p_text += f"🆔 **আইডি:** `{user.id}`\n"
+                p_text += f"🔗 **ইউজারনেম:** @{user.username or 'None'}\n\n"
                 p_text += "আমাকে যেকোনো পোস্টার পাঠান, আমি সেটির ১৬টি ফরম্যাটের লিঙ্ক দিব।"
                 
                 try:
                     photos = bot.get_user_profile_photos(user.id)
+                    bot.delete_message(msg.chat.id, wait_msg.message_id)
                     if photos.total_count > 0:
                         bot.send_photo(msg.chat.id, photos.photos[0][-1].file_id, caption=p_text, parse_mode="Markdown")
                     else:
@@ -543,6 +564,7 @@ def webhook(token):
                 prog = bot.reply_to(msg, "🚀 প্রসেসিং শুরু হয়েছে... দয়া করে অপেক্ষা করুন।")
                 bot.send_chat_action(msg.chat.id, 'upload_document')
                 
+                # Download
                 if msg.content_type == 'photo':
                     fid = msg.photo[-1].file_id
                 else:
@@ -550,8 +572,11 @@ def webhook(token):
                 
                 f_info = bot.get_file(fid)
                 content = bot.download_file(f_info.file_path)
+                
+                # Store
                 stored_id = fs.put(content, filename=f"tg_{fid}", content_type="image/jpeg")
                 
+                # Generate
                 base_url = f"{request.host_url}f/{str(stored_id)}"
                 link_map = {fmt: f"{base_url}?format={fmt}" for fmt in FORMATS}
                 
@@ -561,32 +586,28 @@ def webhook(token):
                     "date": datetime.now(),
                     "type": "bot",
                     "user_id": user.id,
-                    "bot_token": token 
+                    "bot_token": token
                 }).inserted_id
                 
                 bot.delete_message(msg.chat.id, prog.message_id)
                 
                 # --- RESPONSE WITH TAP-TO-COPY LINK ---
                 final_link = f"{request.host_url}view/{str(ins_id)}"
-                res_msg = f"✅ **আপনার পোস্টার রেডি!**\n\n"
-                res_msg += f"🔗 **ডাউনলোড লিঙ্ক (Tap to Copy):**\n`{final_link}`\n\n"
-                res_msg += "উপরের লিঙ্কে ক্লিক করলেই কপি হয়ে যাবে।"
+                reply_msg = f"✅ **আপনার পোস্টার রেডি!**\n\n🔗 **ডাউনলোড লিঙ্ক (ট্যাপ করলে কপি হবে):**\n`{final_link}`"
                 
-                # Copy Link using switch_inline_query for better UX
                 kb = types.InlineKeyboardMarkup()
-                kb.add(types.InlineKeyboardButton("🔗 Open Download Page", url=final_link))
-                
-                bot.reply_to(msg, res_msg, parse_mode="Markdown", reply_markup=kb)
+                kb.add(types.InlineKeyboardButton("🔗 ওপেন করুন", url=final_link))
+                bot.reply_to(msg, reply_msg, parse_mode="Markdown", reply_markup=kb)
 
-        # Handle callback query for Check Join button
+        # Recheck callback
         if update.callback_query:
-            cq = update.callback_query
-            if cq.data == "check_sub":
-                if is_subscribed(bot, cq.from_user.id):
-                    bot.answer_callback_query(cq.id, "ধন্যবাদ! আপনি সফলভাবে জয়েন করেছেন। এখন পোস্টার পাঠান।", show_alert=True)
-                    bot.delete_message(cq.message.chat.id, cq.message.message_id)
+            query = update.callback_query
+            if query.data == "recheck_join":
+                if is_subscribed(bot, query.from_user.id):
+                    bot.answer_callback_query(query.id, "ধন্যবাদ! এখন আপনি বটটি ব্যবহার করতে পারেন।")
+                    bot.delete_message(query.message.chat.id, query.message.message_id)
                 else:
-                    bot.answer_callback_query(cq.id, "❌ আপনি এখনো সব চ্যানেলে জয়েন করেননি!", show_alert=True)
+                    bot.answer_callback_query(query.id, "❌ আপনি এখনো জয়েন করেননি!", show_alert=True)
 
     except Exception as e:
         print(f"Webhook Error: {e}")
