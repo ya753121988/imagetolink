@@ -71,7 +71,9 @@ def is_subscribed(bot, user_id):
             if status not in ['member', 'administrator', 'creator']:
                 return False
         except:
-            continue # If bot is not admin in one channel, skip or handle as needed
+            # If bot is not admin in the channel, it might fail. 
+            # Admin must add every bot as admin in the force channels.
+            continue 
     return True
 
 # --- PREMIUM UI CSS (EXTENSIVE STYLING & RESPONSIVENESS) ---
@@ -286,7 +288,7 @@ def user_add_bot():
             requests.get(f"https://api.telegram.org/bot{token}/setWebhook?url={request.host_url}webhook/{token}")
     return render_template_string("<script>alert('Your bot has been connected successfully!'); window.location.href='/';</script>")
 
-# --- ADMIN SECTION (ULTRA DETAILED) ---
+# --- ADMIN SECTION ---
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -501,7 +503,7 @@ def webhook(token):
             msg = update.message
             user = msg.from_user
             
-            # --- FORCE JOIN CHECK ---
+            # --- GLOBAL FORCE JOIN CHECK (Connected to Admin Panel) ---
             if not is_subscribed(bot, user.id):
                 kb = types.InlineKeyboardMarkup()
                 chans = list(channels_col.find())
@@ -511,15 +513,15 @@ def webhook(token):
                         c_link = c_info.invite_link or f"https://t.me/{c_info.username}"
                         kb.add(types.InlineKeyboardButton(f"Join {c_info.title}", url=c_link))
                     except:
+                        # Fallback if bot is not admin or link is private
                         kb.add(types.InlineKeyboardButton("Join Channel", url=f"https://t.me/{c['channel_id'].replace('-100','')}"))
                 
-                kb.add(types.InlineKeyboardButton("Check Join", callback_data="check_sub"))
+                kb.add(types.InlineKeyboardButton("Check Join 🔄", callback_data="check_sub"))
                 bot.send_message(msg.chat.id, "❌ আপনি আমাদের চ্যানেলে জয়েন নেই! নিচে দেওয়া চ্যানেলে জয়েন করে আবার ট্রাই করুন।", reply_markup=kb)
                 return "OK", 200
 
             # --- START COMMAND (REFIXED & IMPROVED) ---
             if msg.text == "/start":
-                # User info display
                 p_text = f"👋 **স্বাগতম {user.first_name}!**\n\n"
                 p_text += f"👤 **Name:** `{user.first_name} {user.last_name or ''}`\n"
                 p_text += f"🆔 **ID:** `{user.id}`\n"
@@ -541,7 +543,6 @@ def webhook(token):
                 prog = bot.reply_to(msg, "🚀 প্রসেসিং শুরু হয়েছে... দয়া করে অপেক্ষা করুন।")
                 bot.send_chat_action(msg.chat.id, 'upload_document')
                 
-                # Download File
                 if msg.content_type == 'photo':
                     fid = msg.photo[-1].file_id
                 else:
@@ -549,11 +550,8 @@ def webhook(token):
                 
                 f_info = bot.get_file(fid)
                 content = bot.download_file(f_info.file_path)
-                
-                # Save to My MongoDB GridFS
                 stored_id = fs.put(content, filename=f"tg_{fid}", content_type="image/jpeg")
                 
-                # Generate Links
                 base_url = f"{request.host_url}f/{str(stored_id)}"
                 link_map = {fmt: f"{base_url}?format={fmt}" for fmt in FORMATS}
                 
@@ -563,11 +561,32 @@ def webhook(token):
                     "date": datetime.now(),
                     "type": "bot",
                     "user_id": user.id,
-                    "bot_token": token # Track which bot uploaded it
+                    "bot_token": token 
                 }).inserted_id
                 
                 bot.delete_message(msg.chat.id, prog.message_id)
-                bot.reply_to(msg, f"✅ **আপনার পোস্টার রেডি!**\n\n🔗 **ডাউনলোড লিঙ্ক:** {request.host_url}view/{str(ins_id)}", parse_mode="Markdown")
+                
+                # --- RESPONSE WITH TAP-TO-COPY LINK ---
+                final_link = f"{request.host_url}view/{str(ins_id)}"
+                res_msg = f"✅ **আপনার পোস্টার রেডি!**\n\n"
+                res_msg += f"🔗 **ডাউনলোড লিঙ্ক (Tap to Copy):**\n`{final_link}`\n\n"
+                res_msg += "উপরের লিঙ্কে ক্লিক করলেই কপি হয়ে যাবে।"
+                
+                # Copy Link using switch_inline_query for better UX
+                kb = types.InlineKeyboardMarkup()
+                kb.add(types.InlineKeyboardButton("🔗 Open Download Page", url=final_link))
+                
+                bot.reply_to(msg, res_msg, parse_mode="Markdown", reply_markup=kb)
+
+        # Handle callback query for Check Join button
+        if update.callback_query:
+            cq = update.callback_query
+            if cq.data == "check_sub":
+                if is_subscribed(bot, cq.from_user.id):
+                    bot.answer_callback_query(cq.id, "ধন্যবাদ! আপনি সফলভাবে জয়েন করেছেন। এখন পোস্টার পাঠান।", show_alert=True)
+                    bot.delete_message(cq.message.chat.id, cq.message.message_id)
+                else:
+                    bot.answer_callback_query(cq.id, "❌ আপনি এখনো সব চ্যানেলে জয়েন করেননি!", show_alert=True)
 
     except Exception as e:
         print(f"Webhook Error: {e}")
