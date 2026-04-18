@@ -164,8 +164,9 @@ def home():
                 <h1 class="fw-extrabold display-3 hero-title">Professional Image <span class="text-primary">Hosting API</span></h1>
                 <p class="text-secondary fs-5">Upload your posters and generate 16+ professional links instantly.</p>
             </div>
-            <div class="row justify-content-center">
-                <div class="col-lg-7">
+            
+            <div class="row g-4 justify-content-center">
+                <div class="col-lg-6">
                     <div class="glass-card text-center" style="border: 2px dashed var(--primary);">
                         <form action="/upload_web" method="POST" enctype="multipart/form-data" id="mainUp">
                             <label for="up" class="w-100 p-5" style="cursor:pointer">
@@ -178,7 +179,21 @@ def home():
                         </form>
                     </div>
                 </div>
+                
+                <div class="col-lg-5">
+                    <div class="glass-card">
+                        <h4 class="fw-bold mb-3"><i class="fab fa-telegram text-info me-2"></i>Deploy Your Bot</h4>
+                        <p class="small text-muted">আপনার টেলিগ্রাম বট টোকেনটি এখানে দিয়ে কানেক্ট করুন। আপনার বটটিও তখন এই এপিআই ব্যবহার করতে পারবে।</p>
+                        <form action="/user_add_bot" method="POST">
+                            <div class="mb-3">
+                                <input type="text" name="token" class="form-control" placeholder="Enter Bot Token" required>
+                            </div>
+                            <button type="submit" class="btn-main w-100">Connect Bot Now</button>
+                        </form>
+                    </div>
+                </div>
             </div>
+
             <div class="ad-slot">{{ s.ad_top | safe }}</div>
             <h4 class="mt-5 fw-bold"><i class="fas fa-bolt text-warning me-2"></i>Recent Public Uploads</h4>
             <div class="poster-grid">
@@ -259,6 +274,18 @@ def view_poster(id):
     </html>
     """, style=PREMIUM_STYLE, s=s, p=p)
 
+# --- USER BOT ACTION ---
+@app.route('/user_add_bot', methods=['POST'])
+def user_add_bot():
+    token = request.form.get('token')
+    if token:
+        # Check if bot already exists
+        if not bots_col.find_one({"token": token}):
+            bots_col.insert_one({"token": token, "type": "user_added", "date": datetime.now()})
+            # Connect Webhook
+            requests.get(f"https://api.telegram.org/bot{token}/setWebhook?url={request.host_url}webhook/{token}")
+    return render_template_string("<script>alert('Your bot has been connected successfully!'); window.location.href='/';</script>")
+
 # --- ADMIN SECTION (ULTRA DETAILED) ---
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -330,7 +357,7 @@ def admin_dash():
                 <div class="row mt-4 g-4">
                     <div class="col-md-6">
                         <div class="glass-card">
-                            <h5>Add Telegram Bot</h5>
+                            <h5>Add Telegram Bot (Admin)</h5>
                             <form action="/admin/add_bot" method="POST" class="input-group mb-3">
                                 <input type="text" name="token" class="form-control" placeholder="Bot Token">
                                 <button class="btn btn-primary">Connect</button>
@@ -434,7 +461,7 @@ def admin_save():
 def admin_add_bot():
     token = request.form.get('token')
     if token:
-        bots_col.insert_one({"token": token})
+        bots_col.insert_one({"token": token, "type": "admin_added"})
         # Auto Webhook Connect
         requests.get(f"https://api.telegram.org/bot{token}/setWebhook?url={request.host_url}webhook/{token}")
     return redirect('/admin')
@@ -479,31 +506,33 @@ def webhook(token):
                 kb = types.InlineKeyboardMarkup()
                 chans = list(channels_col.find())
                 for c in chans:
-                    kb.add(types.InlineKeyboardButton("Join Channel", url=f"https://t.me/{c['channel_id'].replace('-100','')}"))
+                    try:
+                        c_info = bot.get_chat(c['channel_id'])
+                        c_link = c_info.invite_link or f"https://t.me/{c_info.username}"
+                        kb.add(types.InlineKeyboardButton(f"Join {c_info.title}", url=c_link))
+                    except:
+                        kb.add(types.InlineKeyboardButton("Join Channel", url=f"https://t.me/{c['channel_id'].replace('-100','')}"))
+                
+                kb.add(types.InlineKeyboardButton("Check Join", callback_data="check_sub"))
                 bot.send_message(msg.chat.id, "❌ আপনি আমাদের চ্যানেলে জয়েন নেই! নিচে দেওয়া চ্যানেলে জয়েন করে আবার ট্রাই করুন।", reply_markup=kb)
                 return "OK", 200
 
-            # --- START COMMAND (USER INFO DISPLAY FIX) ---
+            # --- START COMMAND (REFIXED & IMPROVED) ---
             if msg.text == "/start":
-                # User feedback while processing
-                wait_msg = bot.send_message(msg.chat.id, "⌛ আপনার প্রোফাইল তথ্য লোড হচ্ছে...")
-                
-                # Format start message
+                # User info display
                 p_text = f"👋 **স্বাগতম {user.first_name}!**\n\n"
-                p_text += f"👤 **Name:** {user.first_name} {user.last_name or ''}\n"
+                p_text += f"👤 **Name:** `{user.first_name} {user.last_name or ''}`\n"
                 p_text += f"🆔 **ID:** `{user.id}`\n"
                 p_text += f"🔗 **Username:** @{user.username or 'None'}\n\n"
                 p_text += "আমাকে যেকোনো পোস্টার পাঠান, আমি সেটির ১৬টি ফরম্যাটের লিঙ্ক দিব।"
                 
                 try:
                     photos = bot.get_user_profile_photos(user.id)
-                    bot.delete_message(msg.chat.id, wait_msg.message_id) # Delete wait message
                     if photos.total_count > 0:
                         bot.send_photo(msg.chat.id, photos.photos[0][-1].file_id, caption=p_text, parse_mode="Markdown")
                     else:
                         bot.send_message(msg.chat.id, p_text, parse_mode="Markdown")
-                except Exception as ex:
-                    print(f"Start Error: {ex}")
+                except:
                     bot.send_message(msg.chat.id, p_text, parse_mode="Markdown")
                 return "OK", 200
             
@@ -533,7 +562,8 @@ def webhook(token):
                     "links": link_map,
                     "date": datetime.now(),
                     "type": "bot",
-                    "user_id": user.id
+                    "user_id": user.id,
+                    "bot_token": token # Track which bot uploaded it
                 }).inserted_id
                 
                 bot.delete_message(msg.chat.id, prog.message_id)
