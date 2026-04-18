@@ -16,7 +16,7 @@ import functools
 app = Flask(__name__)
 app.secret_key = "MONSTER_PROJECT_SECRET_KEY_ULTRA_MAX_V20"
 
-# --- DATABASE CONNECTION ---
+# --- DATABASE CONNECTION (YOUR OWN MONGODB) ---
 MONGO_URI = "mongodb+srv://roxiw19528:roxiw19528@cluster0.vl508y4.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 try:
     client = MongoClient(MONGO_URI)
@@ -71,10 +71,10 @@ def is_subscribed(bot, user_id):
             if status not in ['member', 'administrator', 'creator']:
                 return False
         except:
-            continue
+            continue # If bot is not admin in one channel, skip or handle as needed
     return True
 
-# --- PREMIUM UI CSS (RESPONSIVE & AUTO MODE) ---
+# --- PREMIUM UI CSS (EXTENSIVE STYLING & RESPONSIVENESS) ---
 PREMIUM_STYLE = """
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap');
@@ -85,49 +85,46 @@ PREMIUM_STYLE = """
         --glass: rgba(255, 255, 255, 0.03);
         --border: rgba(255, 255, 255, 0.08);
         --text: #f1f5f9;
-        --gradient: linear-gradient(135deg, #6366f1 0%, #c026d3 100%);
+        --accent-gradient: linear-gradient(135deg, #6366f1 0%, #c026d3 100%);
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: var(--bg); color: var(--text); font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.6; overflow-x: hidden; }
     
-    /* Responsive Navigation */
-    .nav-premium { background: rgba(11, 15, 25, 0.9); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 1000; padding: 15px 0; }
+    /* Navigation */
+    .nav-premium { background: rgba(11, 15, 25, 0.85); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 1000; padding: 15px 0; }
     
-    /* Glass Cards */
-    .glass-card { background: var(--glass); backdrop-filter: blur(15px); border: 1px solid var(--border); border-radius: 24px; padding: 25px; transition: 0.4s ease; height: 100%; }
+    /* Responsive Cards */
+    .glass-card { background: var(--glass); backdrop-filter: blur(15px); border: 1px solid var(--border); border-radius: 24px; padding: 30px; transition: 0.4s ease; height: 100%; }
     .glass-card:hover { border-color: var(--primary); transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
     
     /* Buttons */
-    .btn-main { background: var(--gradient); border: none; color: white; padding: 12px 25px; border-radius: 14px; font-weight: 700; transition: 0.3s; cursor: pointer; text-decoration: none; display: inline-block; text-align: center; }
-    .btn-main:hover { opacity: 0.9; transform: scale(1.02); color: white; box-shadow: 0 5px 15px rgba(99, 102, 241, 0.4); }
+    .btn-main { background: var(--accent-gradient); border: none; color: white; padding: 12px 30px; border-radius: 14px; font-weight: 700; transition: 0.3s; cursor: pointer; text-decoration: none; display: inline-block; text-align: center; }
+    .btn-main:hover { opacity: 0.9; transform: scale(1.05); color: white; box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3); }
     
-    /* Forms */
+    /* Form Elements */
     .form-control { background: #161b2c !important; border: 1px solid var(--border) !important; color: white !important; border-radius: 12px; padding: 12px; }
+    .form-control:focus { border-color: var(--primary); box-shadow: none; }
     
-    /* Poster Grid */
-    .poster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; margin-top: 30px; }
-    .poster-item img { width: 100%; height: 180px; object-fit: cover; border-radius: 18px; }
+    /* Responsive Grid */
+    .poster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; margin-top: 40px; }
+    .poster-item img { width: 100%; height: 200px; object-fit: cover; border-radius: 18px; border: 1px solid var(--border); }
+    
+    .ad-slot { background: rgba(255,255,255,0.02); border: 1px dashed #444; border-radius: 15px; min-height: 90px; display: flex; align-items: center; justify-content: center; margin: 20px 0; width: 100%; overflow: hidden; }
 
-    /* Admin Sidebar - Desktop & Mobile Auto Mode */
-    .admin-wrapper { display: flex; flex-wrap: wrap; }
-    .sidebar { width: 250px; background: #0e121f; min-height: 100vh; border-right: 1px solid var(--border); padding: 30px 15px; position: fixed; }
-    .main-content { margin-left: 250px; width: calc(100% - 250px); padding: 40px; }
+    /* Admin Sidebar - Responsive Auto Mode */
+    .admin-container { display: flex; flex-wrap: wrap; }
+    .sidebar { background: #0e121f; min-height: 100vh; border-right: 1px solid var(--border); padding: 30px 15px; width: 250px; position: fixed; z-index: 900; }
+    .admin-main { margin-left: 250px; padding: 40px; width: calc(100% - 250px); }
 
     @media (max-width: 992px) {
-        .sidebar { width: 100%; min-height: auto; position: relative; border-right: none; border-bottom: 1px solid var(--border); display: flex; flex-direction: row; overflow-x: auto; padding: 15px; }
-        .sidebar h4 { display: none; }
-        .sidebar a { margin-bottom: 0; margin-right: 10px; white-space: nowrap; padding: 8px 15px; }
-        .main-content { margin-left: 0; width: 100%; padding: 20px; }
+        .sidebar { width: 100%; height: auto; min-height: auto; position: relative; border-right: none; border-bottom: 1px solid var(--border); display: flex; flex-wrap: wrap; justify-content: space-around; padding: 15px; }
+        .sidebar h4 { width: 100%; text-align: center; margin-bottom: 15px; }
+        .sidebar a { margin-bottom: 0 !important; padding: 10px 15px !important; }
+        .admin-main { margin-left: 0; width: 100%; padding: 20px; }
         .hero-title { font-size: 2.2rem; }
-        .poster-grid { grid-template-columns: 1fr 1fr; gap: 15px; }
+        .poster-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
+        .poster-item img { height: 140px; }
     }
-    
-    @media (max-width: 576px) {
-        .poster-grid { grid-template-columns: 1fr; }
-        .btn-main { width: 100%; }
-    }
-
-    .ad-slot { background: rgba(255,255,255,0.02); border: 1px dashed #444; border-radius: 15px; min-height: 90px; display: flex; align-items: center; justify-content: center; margin: 20px 0; overflow: hidden; }
 </style>
 """
 
@@ -159,23 +156,23 @@ def home():
         <nav class="nav-premium">
             <div class="container d-flex justify-content-between align-items-center">
                 <a href="/" class="fw-bold fs-4 text-white text-decoration-none"><i class="fas fa-cloud-upload-alt text-primary"></i> {{ s.site_name }}</a>
-                <a href="/admin" class="btn btn-outline-light btn-sm rounded-pill px-3">Admin</a>
+                <a href="/admin" class="btn btn-outline-light btn-sm rounded-pill px-3">Admin Panel</a>
             </div>
         </nav>
         <div class="container mt-5">
-            <div class="text-center py-4">
-                <h1 class="fw-extrabold display-4 hero-title">Professional Image <span class="text-primary">Hosting API</span></h1>
+            <div class="text-center py-5">
+                <h1 class="fw-extrabold display-3 hero-title">Professional Image <span class="text-primary">Hosting API</span></h1>
                 <p class="text-secondary fs-5">Upload your posters and generate 16+ professional links instantly.</p>
             </div>
             <div class="row justify-content-center">
-                <div class="col-lg-8">
-                    <div class="glass-card text-center border-primary" style="border-style: dashed;">
+                <div class="col-lg-7">
+                    <div class="glass-card text-center" style="border: 2px dashed var(--primary);">
                         <form action="/upload_web" method="POST" enctype="multipart/form-data" id="mainUp">
-                            <label for="up" class="w-100 py-5" style="cursor:pointer">
-                                <i class="fas fa-file-import fa-4x text-primary mb-3"></i>
-                                <h3>Select Your Poster / Image</h3>
-                                <p class="text-muted">JPG, PNG, PSD, AI, PDF, WEBP and more...</p>
-                                <span class="btn-main mt-3">Click to Upload</span>
+                            <label for="up" class="w-100 p-5" style="cursor:pointer">
+                                <i class="fas fa-images fa-4x text-primary mb-3"></i>
+                                <h3>Select Your Poster</h3>
+                                <p class="small text-muted">Supports JPG, PNG, PSD, AI, PDF and more</p>
+                                <div class="btn-main mt-3">Browse File</div>
                             </label>
                             <input type="file" name="file" id="up" style="display:none" onchange="document.getElementById('mainUp').submit();">
                         </form>
@@ -208,15 +205,21 @@ def upload_web():
     if 'file' not in request.files: return redirect('/')
     file = request.files['file']
     if file.filename == '': return redirect('/')
+    
+    # Save to GridFS
     fid = fs.put(file.read(), filename=file.filename, content_type=file.content_type)
+    
+    # Generate Link Array
     base_url = f"{request.host_url}f/{str(fid)}"
     links = {fmt: f"{base_url}?format={fmt}" for fmt in FORMATS}
+    
     ins_id = files_col.insert_one({
         "file_id": str(fid),
         "links": links,
         "date": datetime.now(),
         "type": "web"
     }).inserted_id
+    
     return redirect(url_for('view_poster', id=str(ins_id)))
 
 @app.route('/view/<id>')
@@ -224,6 +227,7 @@ def view_poster(id):
     s = get_config()
     p = files_col.find_one({"_id": ObjectId(id)})
     if not p: return "Poster Expired or Not Found", 404
+    
     return render_template_string("""
     <!DOCTYPE html>
     <html lang="en">
@@ -231,6 +235,7 @@ def view_poster(id):
         <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Download Poster - {{ s.site_name }}</title>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
         {{ style | safe }}{{ s.ad_popunder | safe }}{{ s.ad_social | safe }}
     </head>
     <body class="py-4">
@@ -238,7 +243,7 @@ def view_poster(id):
             <div class="ad-slot">{{ s.ad_top | safe }}</div>
             <div class="glass-card mx-auto text-center" style="max-width: 900px;">
                 <h2 class="fw-bold mb-4">Poster Links Generated Successfully</h2>
-                <img src="/f/{{ p.file_id }}" class="rounded shadow border border-primary mb-4 img-fluid" style="max-height: 450px;">
+                <img src="/f/{{ p.file_id }}" class="rounded shadow border border-primary mb-4 img-fluid" style="max-height: 400px; width: auto;">
                 <div class="ad-slot">{{ s.ad_mid | safe }}</div>
                 <h5 class="mb-4 text-start"><i class="fas fa-link me-2"></i>Select format to download:</h5>
                 <div class="row g-2">
@@ -246,7 +251,7 @@ def view_poster(id):
                     <div class="col-md-3 col-6"><a href="{{ link }}" target="_blank" class="btn btn-outline-primary w-100 btn-sm fw-bold">{{ fmt.upper() }}</a></div>
                     {% endfor %}
                 </div>
-                <a href="/" class="btn btn-secondary mt-4 w-100">Upload Another</a>
+                <div class="mt-4"><a href="/" class="btn-main">Upload Another</a></div>
             </div>
             <div class="ad-slot">{{ s.ad_footer | safe }}</div>
         </div>
@@ -254,7 +259,7 @@ def view_poster(id):
     </html>
     """, style=PREMIUM_STYLE, s=s, p=p)
 
-# --- ADMIN SECTION ---
+# --- ADMIN SECTION (ULTRA DETAILED) ---
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -267,8 +272,8 @@ def login():
         <div style="background:rgba(255,255,255,0.05); padding:40px; border-radius:24px; border:1px solid rgba(255,255,255,0.1); width:100%; max-width:400px; text-align:center;">
             <h2 class="mb-4">Admin Access</h2>
             <form method="POST">
-                <input type="password" name="password" class="form-control mb-3" placeholder="Enter Admin Password" style="background:#161b2c; border:1px solid #333; color:white; width:100%; padding:15px; border-radius:12px;">
-                <button type="submit" style="background:linear-gradient(135deg, #6366f1, #c026d3); border:none; color:white; padding:15px; width:100%; border-radius:12px; font-weight:bold; cursor:pointer;">Login Securely</button>
+                <input type="password" name="password" class="form-control mb-3" placeholder="Password" style="background:#161b2c; border:1px solid #333; color:white; width:100%; padding:12px; border-radius:12px;">
+                <button type="submit" style="background:linear-gradient(135deg, #6366f1, #c026d3); border:none; color:white; padding:12px; width:100%; border-radius:12px; font-weight:bold;">Login</button>
             </form>
         </div>
     </body>
@@ -285,6 +290,7 @@ def admin_dash():
     bot_count = bots_col.count_documents({})
     bots = list(bots_col.find())
     chans = list(channels_col.find())
+    
     return render_template_string("""
     <!DOCTYPE html>
     <html lang="en">
@@ -295,43 +301,45 @@ def admin_dash():
         {{ style | safe }}
     </head>
     <body>
-        <div class="admin-wrapper">
+        <div class="admin-container">
             <div class="sidebar">
-                <h4 class="text-white fw-bold mb-4 px-3"><i class="fas fa-user-shield me-2"></i>ADMIN PRO</h4>
-                <a href="/admin" class="active"><i class="fas fa-cog me-2"></i>Settings</a>
-                <a href="/admin/posters"><i class="fas fa-images me-2"></i>Posters</a>
-                <a href="/" target="_blank"><i class="fas fa-globe me-2"></i>View Site</a>
-                <a href="/logout" class="text-danger mt-lg-5"><i class="fas fa-sign-out-alt me-2"></i>Logout</a>
+                <h4 class="text-white fw-bold mb-4 px-2"><i class="fas fa-user-shield text-primary me-2"></i>ADMIN PRO</h4>
+                <a href="/admin" class="active" style="background: var(--primary); color:white; display:block; padding:12px; border-radius:12px; text-decoration:none; margin-bottom:10px;">Settings</a>
+                <a href="/admin/posters" style="color:#94a3b8; display:block; padding:12px; border-radius:12px; text-decoration:none; margin-bottom:10px;">Posters Gallery</a>
+                <a href="/" target="_blank" style="color:#94a3b8; display:block; padding:12px; border-radius:12px; text-decoration:none; margin-bottom:10px;">View Site</a>
+                <a href="/logout" class="text-danger" style="display:block; padding:12px; border-radius:12px; text-decoration:none;">Logout</a>
             </div>
-            <div class="main-content">
+            <div class="admin-main">
                 <div class="row g-4 mb-4">
-                    <div class="col-md-6"><div class="glass-card" style="background: linear-gradient(45deg, #1e1b4b, #312e81);"><h6>Total Uploads</h6><h2><i class="fas fa-cloud-upload-alt"></i> {{ post_count }}</h2></div></div>
-                    <div class="col-md-6"><div class="glass-card" style="background: linear-gradient(45deg, #4c1d95, #5b21b6);"><h6>Active Bots</h6><h2><i class="fas fa-robot"></i> {{ bot_count }}</h2></div></div>
+                    <div class="col-md-6"><div class="glass-card"><h6>Total Uploads</h6><h2>{{ post_count }}</h2></div></div>
+                    <div class="col-md-6"><div class="glass-card"><h6>Active Bots</h6><h2>{{ bot_count }}</h2></div></div>
                 </div>
                 
-                <form action="/admin/save" method="POST" class="glass-card row g-3 mb-4">
-                    <h5 class="fw-bold text-primary"><i class="fas fa-sliders-h me-2"></i>Configuration & Ads</h5>
-                    <div class="col-md-6"><label>Admin Password</label><input type="text" name="admin_pass" class="form-control" value="{{ s.admin_pass }}"></div>
-                    <div class="col-md-6"><label>Site Name</label><input type="text" name="site_name" class="form-control" value="{{ s.site_name }}"></div>
-                    <div class="col-md-12"><label>Popunder Ad Script</label><textarea name="ad_popunder" class="form-control" rows="2">{{ s.ad_popunder }}</textarea></div>
-                    <div class="col-md-6"><label>Top Banner Ad</label><textarea name="ad_top" class="form-control" rows="2">{{ s.ad_top }}</textarea></div>
-                    <div class="col-md-6"><label>Footer Banner Ad</label><textarea name="ad_footer" class="form-control" rows="2">{{ s.ad_footer }}</textarea></div>
-                    <div class="col-12"><button class="btn-main w-100">Update Settings</button></div>
+                <form action="/admin/save" method="POST" class="glass-card row g-3">
+                    <h5 class="fw-bold"><i class="fas fa-tools me-2"></i>General & Ad Settings</h5>
+                    <div class="col-md-4"><label>Admin Password</label><input type="text" name="admin_pass" class="form-control" value="{{ s.admin_pass }}"></div>
+                    <div class="col-md-4"><label>Site Name</label><input type="text" name="site_name" class="form-control" value="{{ s.site_name }}"></div>
+                    <div class="col-md-4"><label>Popunder Ad</label><textarea name="ad_popunder" class="form-control" rows="1">{{ s.ad_popunder }}</textarea></div>
+                    <div class="col-md-3"><label>Social Bar</label><textarea name="ad_social" class="form-control" rows="1">{{ s.ad_social }}</textarea></div>
+                    <div class="col-md-3"><label>Top Ad</label><textarea name="ad_top" class="form-control" rows="1">{{ s.ad_top }}</textarea></div>
+                    <div class="col-md-3"><label>Mid Ad</label><textarea name="ad_mid" class="form-control" rows="1">{{ s.ad_mid }}</textarea></div>
+                    <div class="col-md-3"><label>Footer Ad</label><textarea name="ad_footer" class="form-control" rows="1">{{ s.ad_footer }}</textarea></div>
+                    <div class="col-12"><button class="btn-main w-100">Save Configuration</button></div>
                 </form>
 
-                <div class="row g-4">
+                <div class="row mt-4 g-4">
                     <div class="col-md-6">
                         <div class="glass-card">
-                            <h5><i class="fab fa-telegram me-2"></i>Add Bot</h5>
+                            <h5>Add Telegram Bot</h5>
                             <form action="/admin/add_bot" method="POST" class="input-group mb-3">
                                 <input type="text" name="token" class="form-control" placeholder="Bot Token">
-                                <button class="btn btn-primary">Add</button>
+                                <button class="btn btn-primary">Connect</button>
                             </form>
-                            <div style="max-height: 250px; overflow-y: auto;">
+                            <div style="max-height: 200px; overflow-y: auto;">
                                 {% for b in bots %}
-                                <div class="d-flex justify-content-between align-items-center border-bottom border-secondary py-2">
-                                    <span class="small text-truncate me-2">{{ b.token[:25] }}...</span>
-                                    <a href="/admin/del_bot/{{ b._id }}" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></a>
+                                <div class="d-flex justify-content-between border-bottom border-secondary py-2">
+                                    <span class="small">{{ b.token[:20] }}...</span>
+                                    <a href="/admin/del_bot/{{ b._id }}" class="text-danger small">Delete</a>
                                 </div>
                                 {% endfor %}
                             </div>
@@ -339,17 +347,19 @@ def admin_dash():
                     </div>
                     <div class="col-md-6">
                         <div class="glass-card">
-                            <h5><i class="fas fa-lock me-2"></i>Force Channels</h5>
+                            <h5>Force Join Channels</h5>
                             <form action="/admin/add_chan" method="POST" class="input-group mb-3">
                                 <input type="text" name="cid" class="form-control" placeholder="Channel ID (-100...)">
                                 <button class="btn btn-primary">Add</button>
                             </form>
-                            {% for c in chans %}
-                            <div class="d-flex justify-content-between border-bottom border-secondary py-2">
-                                <span>{{ c.channel_id }}</span>
-                                <a href="/admin/del_chan/{{ c._id }}" class="text-danger"><i class="fas fa-times-circle"></i></a>
+                            <div style="max-height: 200px; overflow-y: auto;">
+                                {% for c in chans %}
+                                <div class="d-flex justify-content-between border-bottom border-secondary py-2">
+                                    <span class="small">{{ c.channel_id }}</span>
+                                    <a href="/admin/del_chan/{{ c._id }}" class="text-danger small">Delete</a>
+                                </div>
+                                {% endfor %}
                             </div>
-                            {% endfor %}
                         </div>
                     </div>
                 </div>
@@ -367,24 +377,27 @@ def admin_posters():
     total = files_col.count_documents({})
     posters = list(files_col.find().sort("_id", -1).skip(skip).limit(16))
     total_pages = (total // 16) + 1
+    
     return render_template_string("""
     <!DOCTYPE html>
     <html lang="en">
-    <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    {{ style | safe }}</head>
+    <head>
+        <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+        {{ style | safe }}
+    </head>
     <body>
-        <div class="admin-wrapper">
+        <div class="admin-container">
             <div class="sidebar">
-                <h4 class="text-white fw-bold mb-4 px-3">ADMIN PRO</h4>
-                <a href="/admin">Settings</a>
-                <a href="/admin/posters" class="active">Posters</a>
-                <a href="/" target="_blank">View Site</a>
-                <a href="/logout" class="text-danger mt-lg-5">Logout</a>
+                <h4 class="text-white fw-bold mb-4 px-2">ADMIN PRO</h4>
+                <a href="/admin" style="color:#94a3b8; display:block; padding:12px; border-radius:12px; text-decoration:none; margin-bottom:10px;">Settings</a>
+                <a href="/admin/posters" class="active" style="background: var(--primary); color:white; display:block; padding:12px; border-radius:12px; text-decoration:none; margin-bottom:10px;">Posters Gallery</a>
+                <a href="/" target="_blank" style="color:#94a3b8; display:block; padding:12px; border-radius:12px; text-decoration:none; margin-bottom:10px;">View Site</a>
+                <a href="/logout" class="text-danger" style="display:block; padding:12px; border-radius:12px; text-decoration:none;">Logout</a>
             </div>
-            <div class="main-content">
-                <h3 class="fw-bold mb-4">Posters Gallery ({{ total }})</h3>
+            <div class="admin-main">
+                <h3 class="fw-bold mb-4 text-primary">Posters Gallery ({{ total }})</h3>
                 <div class="poster-grid">
                     {% for p in posters %}
                     <div class="poster-item">
@@ -392,7 +405,7 @@ def admin_posters():
                             <img src="/f/{{ p.file_id }}" style="height:120px">
                             <div class="d-flex mt-2 gap-1">
                                 <a href="/view/{{ p._id }}" class="btn btn-sm btn-primary flex-grow-1">View</a>
-                                <a href="/admin/del_post/{{ p._id }}" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></a>
+                                <a href="/admin/del_post/{{ p._id }}" class="btn btn-sm btn-danger">X</a>
                             </div>
                         </div>
                     </div>
@@ -422,6 +435,7 @@ def admin_add_bot():
     token = request.form.get('token')
     if token:
         bots_col.insert_one({"token": token})
+        # Auto Webhook Connect
         requests.get(f"https://api.telegram.org/bot{token}/setWebhook?url={request.host_url}webhook/{token}")
     return redirect('/admin')
 
@@ -469,35 +483,36 @@ def webhook(token):
                 bot.send_message(msg.chat.id, "❌ আপনি আমাদের চ্যানেলে জয়েন নেই! নিচে দেওয়া চ্যানেলে জয়েন করে আবার ট্রাই করুন।", reply_markup=kb)
                 return "OK", 200
 
-            # --- START COMMAND (FIXED & IMPROVED) ---
+            # --- START COMMAND (USER INFO DISPLAY FIX) ---
             if msg.text == "/start":
-                wait_msg = bot.send_message(msg.chat.id, "⏳ আপনার তথ্য যাচাই করা হচ্ছে...")
+                # User feedback while processing
+                wait_msg = bot.send_message(msg.chat.id, "⌛ আপনার প্রোফাইল তথ্য লোড হচ্ছে...")
                 
-                name = user.first_name if user.first_name else "User"
-                username = f"@{user.username}" if user.username else "No Username"
-                
-                p_text = f"👋 **স্বাগতম {name}!**\n\n"
-                p_text += f"👤 **নাম:** {name}\n"
-                p_text += f"🆔 **আইডি:** `{user.id}`\n"
-                p_text += f"🔗 **ইউজারনেম:** {username}\n\n"
-                p_text += "🚀 **কিভাবে ব্যবহার করবেন?**\n"
-                p_text += "আমাকে যেকোনো ছবি বা পোস্টার পাঠান, আমি সেটির ১৬টি ফরম্যাটের প্রিমিয়াম ডাউনলোড লিঙ্ক দিয়ে দিব।"
+                # Format start message
+                p_text = f"👋 **স্বাগতম {user.first_name}!**\n\n"
+                p_text += f"👤 **Name:** {user.first_name} {user.last_name or ''}\n"
+                p_text += f"🆔 **ID:** `{user.id}`\n"
+                p_text += f"🔗 **Username:** @{user.username or 'None'}\n\n"
+                p_text += "আমাকে যেকোনো পোস্টার পাঠান, আমি সেটির ১৬টি ফরম্যাটের লিঙ্ক দিব।"
                 
                 try:
                     photos = bot.get_user_profile_photos(user.id)
-                    bot.delete_message(msg.chat.id, wait_msg.message_id)
+                    bot.delete_message(msg.chat.id, wait_msg.message_id) # Delete wait message
                     if photos.total_count > 0:
                         bot.send_photo(msg.chat.id, photos.photos[0][-1].file_id, caption=p_text, parse_mode="Markdown")
                     else:
                         bot.send_message(msg.chat.id, p_text, parse_mode="Markdown")
-                except:
+                except Exception as ex:
+                    print(f"Start Error: {ex}")
                     bot.send_message(msg.chat.id, p_text, parse_mode="Markdown")
                 return "OK", 200
             
-            # --- FILE HANDLING ---
+            # --- FILE HANDLING (IMAGE TO LINK) ---
             if msg.content_type in ['photo', 'document']:
-                prog = bot.reply_to(msg, "📤 পোস্টার প্রসেসিং হচ্ছে, দয়া করে অপেক্ষা করুন...")
+                prog = bot.reply_to(msg, "🚀 প্রসেসিং শুরু হয়েছে... দয়া করে অপেক্ষা করুন।")
+                bot.send_chat_action(msg.chat.id, 'upload_document')
                 
+                # Download File
                 if msg.content_type == 'photo':
                     fid = msg.photo[-1].file_id
                 else:
@@ -506,7 +521,10 @@ def webhook(token):
                 f_info = bot.get_file(fid)
                 content = bot.download_file(f_info.file_path)
                 
+                # Save to My MongoDB GridFS
                 stored_id = fs.put(content, filename=f"tg_{fid}", content_type="image/jpeg")
+                
+                # Generate Links
                 base_url = f"{request.host_url}f/{str(stored_id)}"
                 link_map = {fmt: f"{base_url}?format={fmt}" for fmt in FORMATS}
                 
@@ -523,6 +541,7 @@ def webhook(token):
 
     except Exception as e:
         print(f"Webhook Error: {e}")
+        
     return "OK", 200
 
 # --- MAIN RUNNER ---
